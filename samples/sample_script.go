@@ -88,6 +88,27 @@ func plotChart() {
 	p.X.Label.Text = "Time"
 	p.Y.Label.Text = "Price"
 
+	// Calculate min and max prices for better scaling
+	minPrice := prices[0].Y
+	maxPrice := prices[0].Y
+	for _, point := range prices {
+		if point.Y < minPrice {
+			minPrice = point.Y
+		}
+		if point.Y > maxPrice {
+			maxPrice = point.Y
+		}
+	}
+
+	// Add some padding to the price range (0.1% of the range)
+	padding := (maxPrice - minPrice) * 0.001
+	p.Y.Min = minPrice - padding
+	p.Y.Max = maxPrice + padding
+
+	// Set X axis range
+	p.X.Min = 0
+	p.X.Max = float64(len(prices))
+
 	// Create a line plot
 	line, err := plotter.NewLine(prices)
 	if err != nil {
