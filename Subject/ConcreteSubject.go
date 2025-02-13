@@ -2,12 +2,13 @@
 package Subject
 
 import (
-	"Observer/Observer"
 	"encoding/json"
 	"log"
 	"os"
 
 	"golang.org/x/net/websocket"
+
+	Observer "Observer/Observer"
 )
 
 // ConcreteSubject represents the subject that maintains a list of observers
@@ -31,7 +32,7 @@ type ConcreteSubject struct {
 func NewConcreteSubject() *ConcreteSubject {
 	subject := &ConcreteSubject{}
 	subject.getEndpoints("endpoints.json")
-	
+
 	return subject
 }
 

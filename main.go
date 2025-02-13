@@ -1,31 +1,51 @@
 package main
 
 import (
-	"Observer/Observer"
-	"Subject/Subject"
+	Observer "Observer/Observer"
+	Subject "Subject/Subject"
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 )
 
-func initialiseConcreteImplementors() (Subject.Subject, Observer.Observer, Observer.Observer, Observer.Observer) {
-	subject := Subject.NewConcreteSubject()
-	observer1 := Observer.NewConcreteObserver("observer1", true, true, false)
-	observer2 := Observer.NewConcreteObserver("observer2", true, false, true)
-	observer3 := Observer.NewConcreteObserver("observer3", true, true, false)
-	return subject, observer1, observer2, observer3
+func observersFromInput(input string) []Observer.Observer {
+	// We parse the input and create the observers
+	observers := []Observer.Observer{}
+
+	// We split the input by the semicolon
+	observers = strings.Split(input, ";")
+
+	// We split the input by the comma
+	observers = strings.Split(observers[0], ",")
+	
+	// We create the observers
+	for _, observer := range observers {
+		observers = append(observers, Observer.NewConcreteObserver(observer[0], observer[1], observer[2], observer[3]))
+	}
+	
+	// We return the observers
+	return observers
 }
 
+// We will now read the arguments from the command line and act accordingly
 func main() {
+	// Crear un lector de entrada
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Please specify the number of observers you want to create and their preferences according to this format: observer1,BTC,ETH,ADA; observer2,BTC,ETH; observer3,BTC,ADA;")
+	input, _ := reader.ReadString('\n')
+
+	// We parse the input and create the observers
+	observers := observersFromInput(input)
+
 	// We initialise the subject and the observers
-	subject, observer1, observer2, observer3 := initialiseConcreteImplementors()
-	
+	subject := Subject.NewConcreteSubject("endpoints.json")
+
 	// We attach the observers to the subject in order to receive the updates
-	subject.Attach(observer1)
-	subject.Attach(observer2)
-	subject.Attach(observer3)
+	for _, observer := range observers {
+		subject.Attach(observer)
+	}
 
 	// Start listening to the websockets
 	go subject.StartListening()
-
-	// When the enter key is pressed, the program ends
-	fmt.Scanln()
 }
