@@ -37,6 +37,6 @@ func main() {
 	subject.Attach(observer2)
 	subject.Attach(observer3)
 
-	
-	subject.Notify(1, 2, 3)
+	// Iniciar la escucha de websockets
+	subject.StartListening()
 }
