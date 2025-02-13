@@ -1,4 +1,4 @@
-package main
+package Observer
 
 type Observer interface {
 	Update(data string)
