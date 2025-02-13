@@ -3,6 +3,7 @@ package main
 import (
 	"Observer/Observer"
 	"Subject/Subject"
+	"fmt"
 )
 
 func initialiseConcreteImplementors() (Subject.Subject, Observer.Observer, Observer.Observer, Observer.Observer) {
@@ -37,6 +38,9 @@ func main() {
 	subject.Attach(observer2)
 	subject.Attach(observer3)
 
-	// Iniciar la escucha de websockets
-	subject.StartListening()
+	// Start listening to the websockets
+	go subject.StartListening()
+
+	// When the enter key is pressed, the program ends
+	fmt.Scanln()
 }
