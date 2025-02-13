@@ -5,6 +5,7 @@ import (
 	"Observer/Observer"
 	"encoding/json"
 	"log"
+	"os"
 
 	"golang.org/x/net/websocket"
 )
@@ -24,6 +25,36 @@ type ConcreteSubject struct {
 	Btc_Socket string
 	Eth_Socket string
 	Ada_Socket string
+}
+
+// NewConcreteSubject creates a new ConcreteSubject
+func NewConcreteSubject() *ConcreteSubject {
+	subject := &ConcreteSubject{}
+	subject.getEndpoints("endpoints.json")
+	
+	return subject
+}
+
+// getEndpoints reads the endpoints from the JSON file and assigns them to the corresponding variables
+func (p *ConcreteSubject) getEndpoints(fileName string) error {
+	// We read the endpoints from the JSON file
+	content, err := os.ReadFile(fileName)
+	if err != nil {
+		return err
+	}
+	
+	// We parse the JSON
+	var endpoints map[string]string
+	if err := json.Unmarshal(content, &endpoints); err != nil {
+		return err
+	}
+
+	// We assign the endpoints to the corresponding variables
+	p.Btc_Socket = endpoints["Btc"]
+	p.Eth_Socket = endpoints["Eth"]
+	p.Ada_Socket = endpoints["Ada"]
+
+	return nil
 }
 
 // Attach adds a new observer to the notification list

@@ -22,6 +22,16 @@ type ConcreteObserver struct {
 	Ada_Ok bool    // Flag indicating if observer is subscribed to ADA updates
 }
 
+// NewConcreteObserver creates a new ConcreteObserver
+func NewConcreteObserver(id string, Btc_Ok bool, Eth_Ok bool, Ada_Ok bool) *ConcreteObserver {
+	return &ConcreteObserver{
+		id: id,
+		Btc_Ok: Btc_Ok,
+		Eth_Ok: Eth_Ok,
+		Ada_Ok: Ada_Ok,
+	}
+}
+
 // Update receives new cryptocurrency prices and updates the observer's values
 func (p *ConcreteObserver) Update(Btc, Eth, Ada float64) {
 	p.Btc = Btc

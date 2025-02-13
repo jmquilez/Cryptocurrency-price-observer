@@ -7,25 +7,10 @@ import (
 )
 
 func initialiseConcreteImplementors() (Subject.Subject, Observer.Observer, Observer.Observer, Observer.Observer) {
-	subject := Subject.ConcreteSubject{}
-	observer1 := Observer.ConcreteObserver{
-		id: "observer1",
-		Btc_Ok: true,
-		Eth_Ok: true,
-		Ada_Ok: false,
-	}
-	observer2 := Observer.ConcreteObserver{
-		id: "observer2",
-		Btc_Ok: true,
-		Eth_Ok: false,
-		Ada_Ok: true,
-	}
-	observer3 := Observer.ConcreteObserver{
-		id: "observer3",
-		Btc_Ok: true,
-		Eth_Ok: true,
-		Ada_Ok: false,
-	}
+	subject := Subject.NewConcreteSubject()
+	observer1 := Observer.NewConcreteObserver("observer1", true, true, false)
+	observer2 := Observer.NewConcreteObserver("observer2", true, false, true)
+	observer3 := Observer.NewConcreteObserver("observer3", true, true, false)
 	return subject, observer1, observer2, observer3
 }
 
