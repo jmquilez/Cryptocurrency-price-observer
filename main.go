@@ -1,3 +1,5 @@
+// Credits: Juan José Serrano, José Miguel Quilez.
+// Main file.
 package main
 
 import (
@@ -9,9 +11,9 @@ import (
 	"strings"
 )
 
-// parseObserver transforma una cadena en un Observer.Observer.
-// La cadena debe tener el formato: "observerID,CURRENCY1,CURRENCY2,..."
-// Ejemplo: "observer1,BTC,ETH,ADA"
+// parseObserver transforms a string into an Observer.Observer.
+// The string must have the format: "observerID,CURRENCY1,CURRENCY2,..."
+// Example: "observer1,BTC,ETH,ADA"
 func parseObserver(input string) Observer.Observer {
 	input = strings.TrimSpace(input)
 	if input == "" {
@@ -36,8 +38,8 @@ func parseObserver(input string) Observer.Observer {
 	return Observer.NewConcreteObserver(id, btcOk, ethOk, adaOk)
 }
 
-// observersFromInput procesa la entrada y devuelve un slice de Observer.Observer.
-// Primero separa la entrada por ";" (cada observador) y luego procesa cada uno.
+// observersFromInput processes the input and returns a slice of Observer.Observer.
+// First, it separates the input by ";" (each observer) and then processes each one.
 func observersFromInput(input string) []Observer.Observer {
 	parts := strings.Split(input, ";")
 	observers := []Observer.Observer{}
@@ -50,27 +52,27 @@ func observersFromInput(input string) []Observer.Observer {
 }
 
 func main() {
-	// Crear un lector de entrada
+	// Create a reader for input
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Please specify the observers and their preferences in the format as done in this example:")
 	fmt.Println("observer1,BTC,ETH,ADA; observer2,BTC,ETH; observer3,ETH,ADA;")
 	input, _ := reader.ReadString('\n')
 
-	// Procesar la entrada para crear los observadores
+	// Process the input to create the observers
 	observers := observersFromInput(input)
 
-	// Inicializar el subject; NewConcreteSubject ya no recibe argumentos.
+	// Initialize the subject; NewConcreteSubject does not receive arguments.
 	subject := Subject.NewConcreteSubject()
 
-	// Adjuntar los observadores al subject para recibir actualizaciones
+	// Attach the observers to the subject to receive updates
 	for _, observer := range observers {
 		subject.Attach(observer)
 	}
 
-	// Iniciar la escucha de websockets en una goroutine
+	// Start listening to the websockets in a goroutine
 	go subject.StartListening()
 
-	// Mantener el programa en ejecución hasta que se presione Enter
+	// Keep the program running until Enter is pressed
 	fmt.Println("Press Enter to exit...")
 	reader.ReadString('\n')
 }

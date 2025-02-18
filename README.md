@@ -1,5 +1,11 @@
 # Cryptocurrency Price Observer
 
+## Authors
+
+#### José Miguel Quilez, Juan José Serrano.
+
+## Description
+
 A Go application that implements the Observer pattern to track real-time cryptocurrency prices from Binance websockets.
 
 ## Features
@@ -24,7 +30,7 @@ A Go application that implements the Observer pattern to track real-time cryptoc
 
 ## Usage
 
-1. Create a `endpoints.json` file with your Binance websocket endpoints
+1. Create a `endpoints.json` file with your Binance websocket endpoints of BTC, ETH or ADA.
 2. Run the application:
 ```bash
 go run main.go
@@ -33,11 +39,11 @@ go run main.go
 3. Follow the prompts to create observers with their cryptocurrency preferences
 4. Price charts will be automatically generated in PNG format
 
-## Project Structurek
+## Project Structure
 
 - `Observer/` - Observer interface and concrete implementation
 - `Subject/` - Subject interface and concrete implementation 
-- `samples/` - Sample code and utilities
+- `Results/` - Results of the price charts
 - `endpoints.json` - Websocket endpoint configuration
 
 ## Design Pattern
@@ -47,7 +53,3 @@ This project implements the Observer pattern where:
 - Subject: Maintains cryptocurrency prices and notifies observers
 - Observers: Subscribe to price updates for specific cryptocurrencies
 - Each observer generates its own price charts
-
-## Authors
-
-José Miguel Quilez, Juan José Serrano.

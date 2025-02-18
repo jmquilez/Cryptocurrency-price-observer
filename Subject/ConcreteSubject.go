@@ -1,3 +1,4 @@
+// Credits: Juan José Serrano, José Miguel Quilez.
 // Package Subject implements the Subject part of the Observer pattern
 package Subject
 

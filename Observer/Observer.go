@@ -1,3 +1,5 @@
+// Credits: Juan José Serrano, José Miguel Quilez.
+// Package Observer defines the Observer interface.
 package Observer
 
 // Observer interface defines the methods that all observers must implement

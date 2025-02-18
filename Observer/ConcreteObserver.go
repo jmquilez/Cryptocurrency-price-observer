@@ -1,3 +1,4 @@
+// Credits: Juan José Serrano, José Miguel Quilez.
 // Package Observer implements the Observer pattern for cryptocurrency price tracking
 package Observer
 

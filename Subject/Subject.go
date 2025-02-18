@@ -1,3 +1,5 @@
+// Credits: Juan José Serrano, José Miguel Quilez.
+// Package Subject defines the Subject interface.
 package Subject
 
 import "p1/Observer"
