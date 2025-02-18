@@ -1,51 +1,76 @@
 package main
 
 import (
-	Observer "Observer/Observer"
-	Subject "Subject/Subject"
 	"bufio"
 	"fmt"
 	"os"
+	"p1/Observer"
+	"p1/Subject"
 	"strings"
 )
 
-func observersFromInput(input string) []Observer.Observer {
-	// We parse the input and create the observers
-	observers := []Observer.Observer{}
-
-	// We split the input by the semicolon
-	observers = strings.Split(input, ";")
-
-	// We split the input by the comma
-	observers = strings.Split(observers[0], ",")
-	
-	// We create the observers
-	for _, observer := range observers {
-		observers = append(observers, Observer.NewConcreteObserver(observer[0], observer[1], observer[2], observer[3]))
+// parseObserver transforma una cadena en un Observer.Observer.
+// La cadena debe tener el formato: "observerID,CURRENCY1,CURRENCY2,..."
+// Ejemplo: "observer1,BTC,ETH,ADA"
+func parseObserver(input string) Observer.Observer {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return nil
 	}
-	
-	// We return the observers
+	tokens := strings.Split(input, ",")
+	if len(tokens) < 1 {
+		return nil
+	}
+	id := strings.TrimSpace(tokens[0])
+	btcOk, ethOk, adaOk := false, false, false
+	for _, token := range tokens[1:] {
+		token = strings.TrimSpace(strings.ToUpper(token))
+		if token == "BTC" {
+			btcOk = true
+		} else if token == "ETH" {
+			ethOk = true
+		} else if token == "ADA" {
+			adaOk = true
+		}
+	}
+	return Observer.NewConcreteObserver(id, btcOk, ethOk, adaOk)
+}
+
+// observersFromInput procesa la entrada y devuelve un slice de Observer.Observer.
+// Primero separa la entrada por ";" (cada observador) y luego procesa cada uno.
+func observersFromInput(input string) []Observer.Observer {
+	parts := strings.Split(input, ";")
+	observers := []Observer.Observer{}
+	for _, part := range parts {
+		if obs := parseObserver(part); obs != nil {
+			observers = append(observers, obs)
+		}
+	}
 	return observers
 }
 
-// We will now read the arguments from the command line and act accordingly
 func main() {
 	// Crear un lector de entrada
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Please specify the number of observers you want to create and their preferences according to this format: observer1,BTC,ETH,ADA; observer2,BTC,ETH; observer3,BTC,ADA;")
+	fmt.Println("Please specify the observers and their preferences in the format as done in this example:")
+	fmt.Println("observer1,BTC,ETH,ADA; observer2,BTC,ETH; observer3,ETH,ADA;")
 	input, _ := reader.ReadString('\n')
 
-	// We parse the input and create the observers
+	// Procesar la entrada para crear los observadores
 	observers := observersFromInput(input)
 
-	// We initialise the subject and the observers
-	subject := Subject.NewConcreteSubject("endpoints.json")
+	// Inicializar el subject; NewConcreteSubject ya no recibe argumentos.
+	subject := Subject.NewConcreteSubject()
 
-	// We attach the observers to the subject in order to receive the updates
+	// Adjuntar los observadores al subject para recibir actualizaciones
 	for _, observer := range observers {
 		subject.Attach(observer)
 	}
 
-	// Start listening to the websockets
+	// Iniciar la escucha de websockets en una goroutine
 	go subject.StartListening()
+
+	// Mantener el programa en ejecución hasta que se presione Enter
+	fmt.Println("Press Enter to exit...")
+	reader.ReadString('\n')
 }

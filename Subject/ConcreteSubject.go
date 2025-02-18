@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"strconv"
 
 	"golang.org/x/net/websocket"
 
-	Observer "Observer/Observer"
+	"p1/Observer"
 )
 
 // ConcreteSubject represents the subject that maintains a list of observers
@@ -86,9 +87,9 @@ func (p *ConcreteSubject) Notify(Btc, Eth, Ada float64) (bool, error) {
 	Eth_Ok := Eth != -1
 	Ada_Ok := Ada != -1
 
-	// We only notify the observers that are "subscribed" to the given data
+	// We only notify the observers that are subscribed to the given data
 	for _, observer := range p.Observers {
-		if Btc_Ok && observer.GetBtc_Ok() || Eth_Ok && observer.GetEth_Ok() || Ada_Ok && observer.GetAda_Ok() {
+		if (Btc_Ok && observer.GetBtc_Ok()) || (Eth_Ok && observer.GetEth_Ok()) || (Ada_Ok && observer.GetAda_Ok()) {
 			observer.Update(Btc, Eth, Ada)
 		}
 	}
@@ -110,50 +111,42 @@ func (p *ConcreteSubject) GetAda_Price() float64 {
 	return p.Ada_Price
 }
 
-// GetBtc_Socket returns the websocket endpoint for Bitcoin
+// GetBtc_PriceFromSocket connects to the Bitcoin websocket and returns its price
 func (p *ConcreteSubject) GetBtc_PriceFromSocket() float64 {
-	
-	// Connect to the websocket
 	conn, err := websocket.Dial(p.Btc_Socket, "", "http://localhost:8080")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Close()
 
-	// Read the message from the websocket
-	var msg = make([]byte, 512)
-	var n int
-	if _, err := conn.Read(msg[:n]); err != nil {
+	msg := make([]byte, 512)
+	n, err := conn.Read(msg)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Parse the message as a JSON object
 	var data map[string]interface{}
 	if err := json.Unmarshal(msg[:n], &data); err != nil {
 		log.Fatal(err)
 	}
 
-	// Return the price of Bitcoin
 	return data["price"].(float64)
 }
 
-// GetEth_Socket returns the websocket endpoint for Ethereum
+// GetEth_PriceFromSocket connects to the Ethereum websocket and returns its price
 func (p *ConcreteSubject) GetEth_PriceFromSocket() float64 {
-	// Connect to the websocket
 	conn, err := websocket.Dial(p.Eth_Socket, "", "http://localhost:8081")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Close()
 
-	// Read the message from the websocket
-	var msg = make([]byte, 512)
-	var n int
-	if _, err := conn.Read(msg[:n]); err != nil {
+	msg := make([]byte, 512)
+	n, err := conn.Read(msg)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Parse the message as a JSON object
 	var data map[string]interface{}
 	if err := json.Unmarshal(msg[:n], &data); err != nil {
 		log.Fatal(err)
@@ -162,74 +155,81 @@ func (p *ConcreteSubject) GetEth_PriceFromSocket() float64 {
 	return data["price"].(float64)
 }
 
-// GetAda_Socket returns the websocket endpoint for Cardano
+// GetAda_PriceFromSocket connects to the Cardano websocket and returns its price
 func (p *ConcreteSubject) GetAda_PriceFromSocket() float64 {
-	// Connect to the websocket
 	conn, err := websocket.Dial(p.Ada_Socket, "", "http://localhost:8082")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Close()
 
-	// Read the message from the websocket
-	var msg = make([]byte, 512)
-	var n int
-	if _, err := conn.Read(msg[:n]); err != nil {
+	msg := make([]byte, 512)
+	n, err := conn.Read(msg)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Parse the message as a JSON object
 	var data map[string]interface{}
 	if err := json.Unmarshal(msg[:n], &data); err != nil {
 		log.Fatal(err)
 	}
 
-	// Return the price of Cardano
 	return data["price"].(float64)
 }
 
-// listenToCrypto is a helper function that listens to a cryptocurrency websocket and updates the prices
+// listenToCrypto es una función auxiliar que escucha un websocket de criptomonedas y envía actualizaciones a través de un canal
 func (p *ConcreteSubject) listenToCrypto(wsURL string, updates chan<- float64) {
 	conn, err := websocket.Dial(wsURL, "", "http://localhost")
 	if err != nil {
-		log.Printf("Error connecting to %s: %v", wsURL, err)
+		log.Printf("Error conectando a %s: %v", wsURL, err)
 		return
 	}
 	defer conn.Close()
 
 	for {
-		var msg = make([]byte, 512)
-		if _, err := conn.Read(msg); err != nil {
-			log.Printf("Error reading from %s: %v", wsURL, err)
+		msg := make([]byte, 512)
+		n, err := conn.Read(msg)
+		if err != nil {
+			log.Printf("Error leyendo desde %s: %v", wsURL, err)
 			continue
 		}
+
+		// Se muestra el mensaje recibido para depuración
+		log.Printf("Mensaje crudo de %s: %s", wsURL, string(msg[:n]))
 
 		var data map[string]interface{}
-		if err := json.Unmarshal(msg, &data); err != nil {
-			log.Printf("Error parsing JSON from %s: %v", wsURL, err)
+		if err := json.Unmarshal(msg[:n], &data); err != nil {
+			log.Printf("Error parseando JSON desde %s: %v", wsURL, err)
 			continue
 		}
 
-		if price, ok := data["price"].(float64); ok {
+		// Binance envía el precio en la clave "p" en formato string
+		if priceStr, ok := data["p"].(string); ok {
+			price, err := strconv.ParseFloat(priceStr, 64)
+			if err != nil {
+				log.Printf("Error convirtiendo el precio desde %s: %v", wsURL, err)
+				continue
+			}
 			updates <- price
+		} else {
+			log.Printf("No se encontró el precio en los datos provenientes de %s: %v", wsURL, data)
 		}
 	}
 }
 
 // StartListening starts the listening process for cryptocurrency prices.
-// Since there are not concurrent updates, we can use a single channel for each cryptocurrency.
 func (p *ConcreteSubject) StartListening() {
-	// Create go channels for each cryptocurrency
+	// Create channels for price updates
 	btcUpdates := make(chan float64)
 	ethUpdates := make(chan float64)
 	adaUpdates := make(chan float64)
 
-	// Start go routines for each websocket
+	// Start goroutines for each websocket connection
 	go p.listenToCrypto(p.Btc_Socket, btcUpdates)
 	go p.listenToCrypto(p.Eth_Socket, ethUpdates)
 	go p.listenToCrypto(p.Ada_Socket, adaUpdates)
 
-	// Listen to the updates from each channel
+	// Listen for incoming price updates and notify observers accordingly
 	for {
 		select {
 		case btcPrice := <-btcUpdates:

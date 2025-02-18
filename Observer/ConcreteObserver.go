@@ -4,6 +4,7 @@ package Observer
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
@@ -40,12 +41,15 @@ func (p *ConcreteObserver) Update(Btc, Eth, Ada float64) {
 
 	// Print the graph
 	if p.Btc_Ok {
+		fmt.Println("BTC: ", Btc)
 		go p.PrintGraph("BTC")
 	}
 	if p.Eth_Ok {
+		fmt.Println("ETH: ", Eth)
 		go p.PrintGraph("ETH")
 	}
 	if p.Ada_Ok {
+		fmt.Println("ADA: ", Ada)
 		go p.PrintGraph("ADA")
 	}
 }
@@ -118,7 +122,7 @@ func (p *ConcreteObserver) PrintGraph(option string) {
 
 	// Set X axis range
 	plt.X.Min = 0
-	plt.X.Max = float64(len(btcPrices))
+	plt.X.Max = float64(len(btcPrices) * 3)
 
 	// Create and add the line plot
 	line, err := plotter.NewLine(btcPrices)
@@ -129,8 +133,14 @@ func (p *ConcreteObserver) PrintGraph(option string) {
 	line.Color = plotutil.Color(0)
 	plt.Add(line)
 
+	// Ensure the Results directory exists
+	if err := os.MkdirAll("Results", 0755); err != nil {
+		log.Printf("Error creating Results directory: %v", err)
+		return
+	}
+
 	// Save the plot to a PNG file
-	filename := fmt.Sprintf("%s_chart_%s.png", option, p.id)
+	filename := fmt.Sprintf("Results/%s_chart_%s.png", option, p.id)
 	if err := plt.Save(10*vg.Inch, 6*vg.Inch, filename); err != nil {
 		log.Printf("Error saving plot for observer %s: %v", p.id, err)
 		return

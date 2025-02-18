@@ -1,6 +1,6 @@
 package Subject
 
-import "Observer/Observer"
+import "p1/Observer"
 
 // Subject interface defines the methods that all subjects must implement
 type Subject interface {
