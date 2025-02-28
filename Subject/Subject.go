@@ -18,4 +18,3 @@ type Subject interface {
 	// Notify updates all observers with the given data
 	Notify(data string) (bool, error)
 }
-

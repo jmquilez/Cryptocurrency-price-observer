@@ -27,7 +27,7 @@ type ConcreteObserver struct {
 // NewConcreteObserver creates a new ConcreteObserver
 func NewConcreteObserver(id string, Btc_Ok bool, Eth_Ok bool, Ada_Ok bool) *ConcreteObserver {
 	return &ConcreteObserver{
-		id: id,
+		id:     id,
 		Btc_Ok: Btc_Ok,
 		Eth_Ok: Eth_Ok,
 		Ada_Ok: Ada_Ok,
@@ -58,21 +58,6 @@ func (p *ConcreteObserver) Update(Btc, Eth, Ada float64) {
 // GetID returns the observer's unique identifier
 func (p *ConcreteObserver) GetID() string {
 	return p.id
-}
-
-// GetBtc returns the current Bitcoin price
-func (p *ConcreteObserver) GetBtc() float64 {
-	return p.Btc
-}
-
-// GetEth returns the current Ethereum price
-func (p *ConcreteObserver) GetEth() float64 {
-	return p.Eth
-}
-
-// GetAda returns the current Cardano price
-func (p *ConcreteObserver) GetAda() float64 {
-	return p.Ada
 }
 
 // GetBtc_Ok returns whether the observer is subscribed to Bitcoin updates

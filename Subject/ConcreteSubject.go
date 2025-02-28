@@ -45,7 +45,7 @@ func (p *ConcreteSubject) getEndpoints(fileName string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// We parse the JSON
 	var endpoints map[string]string
 	if err := json.Unmarshal(content, &endpoints); err != nil {
@@ -95,21 +95,6 @@ func (p *ConcreteSubject) Notify(Btc, Eth, Ada float64) (bool, error) {
 		}
 	}
 	return true, nil
-}
-
-// GetBtc_Price returns the current Bitcoin price
-func (p *ConcreteSubject) GetBtc_Price() float64 {
-	return p.Btc_Price
-}
-
-// GetEth_Price returns the current Ethereum price
-func (p *ConcreteSubject) GetEth_Price() float64 {
-	return p.Eth_Price
-}
-
-// GetAda_Price returns the current Cardano price
-func (p *ConcreteSubject) GetAda_Price() float64 {
-	return p.Ada_Price
 }
 
 // GetBtc_PriceFromSocket connects to the Bitcoin websocket and returns its price
