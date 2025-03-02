@@ -119,7 +119,7 @@ func (p *ConcreteObserver) PrintGraph(option string, price float64) {
 	plt := plot.New()
 
 	plt.Title.Text = fmt.Sprintf("%s Price Chart - Observer %s", option, p.id)
-	plt.X.Label.Text = "Time"
+	plt.X.Label.Text = "Time (samples)"
 	plt.Y.Label.Text = "Price (USDT)"
 
 	// Calculate min and max prices for better scaling
