@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
@@ -15,43 +16,55 @@ import (
 
 // ConcreteObserver represents a specific observer that tracks cryptocurrency prices
 type ConcreteObserver struct {
-	id     string  // Unique identifier for the observer
-	Btc    float64 // Bitcoin price
-	Eth    float64 // Ethereum price
-	Ada    float64 // Cardano price
-	Btc_Ok bool    // Flag indicating if observer is subscribed to BTC updates
-	Eth_Ok bool    // Flag indicating if observer is subscribed to ETH updates
-	Ada_Ok bool    // Flag indicating if observer is subscribed to ADA updates
+	id             string  // Unique identifier for the observer
+	Btc            float64 // Bitcoin price
+	Eth            float64 // Ethereum price
+	Ada            float64 // Cardano price
+	Btc_Ok         bool    // Flag indicating if observer is subscribed to BTC updates
+	Eth_Ok         bool    // Flag indicating if observer is subscribed to ETH updates
+	Ada_Ok         bool    // Flag indicating if observer is subscribed to ADA updates
+	activeFileOps  *sync.WaitGroup
+	shutdownMutex  *sync.Mutex
+	isShuttingDown *bool
 }
 
 // NewConcreteObserver creates a new ConcreteObserver
-func NewConcreteObserver(id string, Btc_Ok bool, Eth_Ok bool, Ada_Ok bool) *ConcreteObserver {
+func NewConcreteObserver(id string, Btc_Ok bool, Eth_Ok bool, Ada_Ok bool, activeFileOps *sync.WaitGroup, shutdownMutex *sync.Mutex, isShuttingDown *bool) *ConcreteObserver {
 	return &ConcreteObserver{
-		id:     id,
-		Btc_Ok: Btc_Ok,
-		Eth_Ok: Eth_Ok,
-		Ada_Ok: Ada_Ok,
+		id:             id,
+		Btc_Ok:         Btc_Ok,
+		Eth_Ok:         Eth_Ok,
+		Ada_Ok:         Ada_Ok,
+		activeFileOps:  activeFileOps,
+		shutdownMutex:  shutdownMutex,
+		isShuttingDown: isShuttingDown,
 	}
 }
 
 // Update receives new cryptocurrency prices and updates the observer's values
 func (p *ConcreteObserver) Update(Btc, Eth, Ada float64) {
-	p.Btc = Btc
-	p.Eth = Eth
-	p.Ada = Ada
+	if Btc >= 0 {
+		p.Btc = Btc
+	}
+	if Eth >= 0 {
+		p.Eth = Eth
+	}
+	if Ada >= 0 {
+		p.Ada = Ada
+	}
 
 	// Print the graph
-	if p.Btc_Ok {
+	if p.Btc_Ok && Btc >= 0 {
 		fmt.Println("BTC: ", Btc)
-		go p.PrintGraph("BTC")
+		go p.PrintGraph("BTC", p.Btc)
 	}
-	if p.Eth_Ok {
+	if p.Eth_Ok && Eth >= 0 {
 		fmt.Println("ETH: ", Eth)
-		go p.PrintGraph("ETH")
+		go p.PrintGraph("ETH", p.Eth)
 	}
-	if p.Ada_Ok {
+	if p.Ada_Ok && Ada >= 0 {
 		fmt.Println("ADA: ", Ada)
-		go p.PrintGraph("ADA")
+		go p.PrintGraph("ADA", p.Ada)
 	}
 }
 
@@ -75,12 +88,32 @@ func (p *ConcreteObserver) GetAda_Ok() bool {
 	return p.Ada_Ok
 }
 
-var btcPrices plotter.XYs
+var priceHistories = map[string]plotter.XYs{}
+var mutex sync.Mutex
 
 // PrintGraph creates and saves a line chart of cryptocurrency prices
-func (p *ConcreteObserver) PrintGraph(option string) {
+func (p *ConcreteObserver) PrintGraph(option string, price float64) {
+	// Check if we're shutting down
+	p.shutdownMutex.Lock()
+	if *p.isShuttingDown {
+		p.shutdownMutex.Unlock()
+		return // Skip file operations during shutdown
+	}
+	p.shutdownMutex.Unlock()
+
+	// Indicate we're starting a file operation
+	p.activeFileOps.Add(1)
+	defer p.activeFileOps.Done()
+
+	// Use mutex to prevent concurrent map writes
+	mutex.Lock()
 	// Append current price to the price history
-	btcPrices = append(btcPrices, plotter.XY{X: float64(len(btcPrices)), Y: p.Btc})
+	priceHistories[option] = append(priceHistories[option], plotter.XY{X: float64(len(priceHistories[option])), Y: price})
+
+	// Create a local copy of the price history for this option
+	localPriceHistory := make(plotter.XYs, len(priceHistories[option]))
+	copy(localPriceHistory, priceHistories[option])
+	mutex.Unlock()
 
 	// Create a new plot
 	plt := plot.New()
@@ -90,9 +123,10 @@ func (p *ConcreteObserver) PrintGraph(option string) {
 	plt.Y.Label.Text = "Price (USDT)"
 
 	// Calculate min and max prices for better scaling
-	minPrice := btcPrices[0].Y
-	maxPrice := btcPrices[0].Y
-	for _, point := range btcPrices {
+	mutex.Lock()
+	minPrice := localPriceHistory[0].Y
+	maxPrice := localPriceHistory[0].Y
+	for _, point := range localPriceHistory {
 		if point.Y < minPrice {
 			minPrice = point.Y
 		}
@@ -100,6 +134,7 @@ func (p *ConcreteObserver) PrintGraph(option string) {
 			maxPrice = point.Y
 		}
 	}
+	mutex.Unlock()
 
 	// Add padding to the price range (0.1% of the range)
 	padding := (maxPrice - minPrice) * 0.001
@@ -108,10 +143,12 @@ func (p *ConcreteObserver) PrintGraph(option string) {
 
 	// Set X axis range
 	plt.X.Min = 0
-	plt.X.Max = float64(len(btcPrices) * 3)
+	mutex.Lock()
+	plt.X.Max = float64(len(localPriceHistory) * 3)
 
 	// Create and add the line plot
-	line, err := plotter.NewLine(btcPrices)
+	line, err := plotter.NewLine(localPriceHistory)
+	mutex.Unlock()
 	if err != nil {
 		log.Printf("Error creating line plot for observer %s: %v", p.id, err)
 		return
@@ -125,12 +162,10 @@ func (p *ConcreteObserver) PrintGraph(option string) {
 		return
 	}
 
-	// Save the plot to a PNG file
+	// Save the plot directly to the final filename
 	filename := fmt.Sprintf("Results/%s_chart_%s.png", option, p.id)
 	if err := plt.Save(10*vg.Inch, 6*vg.Inch, filename); err != nil {
 		log.Printf("Error saving plot for observer %s: %v", p.id, err)
 		return
 	}
-
-	log.Printf("Chart updated and saved to %s", filename)
 }

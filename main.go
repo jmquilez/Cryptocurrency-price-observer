@@ -6,9 +6,21 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/signal"
 	"p1/Observer"
 	"p1/Subject"
 	"strings"
+	"sync"
+	"syscall"
+)
+
+var (
+	// Global flag to indicate shutdown is in progress
+	isShuttingDown bool
+	// Mutex to protect the flag
+	shutdownMutex sync.Mutex
+	// WaitGroup to track active file operations
+	activeFileOps sync.WaitGroup
 )
 
 // parseObserver transforms a string into an Observer.Observer.
@@ -35,7 +47,7 @@ func parseObserver(input string) Observer.Observer {
 			adaOk = true
 		}
 	}
-	return Observer.NewConcreteObserver(id, btcOk, ethOk, adaOk)
+	return Observer.NewConcreteObserver(id, btcOk, ethOk, adaOk, &activeFileOps, &shutdownMutex, &isShuttingDown)
 }
 
 // observersFromInput processes the input and returns a slice of Observer.Observer.
@@ -52,6 +64,28 @@ func observersFromInput(input string) []Observer.Observer {
 }
 
 func main() {
+	// Set up signal handling
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start a goroutine to handle shutdown signals
+	go func() {
+		<-sigChan
+		fmt.Println("\nShutdown signal received, cleaning up...")
+
+		// Set shutdown flag
+		shutdownMutex.Lock()
+		isShuttingDown = true
+		shutdownMutex.Unlock()
+
+		// Wait for all file operations to complete
+		fmt.Println("Waiting for file operations to complete...")
+		activeFileOps.Wait()
+
+		fmt.Println("Clean shutdown complete")
+		os.Exit(0)
+	}()
+
 	// Create a reader for input
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Please specify the observers and their preferences in the format as done in this example:")
